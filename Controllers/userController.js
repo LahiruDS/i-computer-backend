@@ -22,46 +22,54 @@ export function createUser(req, res) {
 	});
 }
 
-export function loginUser(req, res) {
-	const email = req.body.email;
-	const password = req.body.password;
+export async function loginUser(req, res) {
+	try {
+		const { email, password } = req.body;
 
-	User.find({ email: email }).then((users) => {
-		if (users[0] == null) {
-			res.json({
+		const user = await User.findOne({ email });
+		if (!user) {
+			return res.status(404).json({
+				success: false,
 				message: "User not found",
 			});
-		} else {
-			const user = users[0];
-
-			const isPasswordCorrect = bcrypt.compareSync(password, user.password);
-
-			if (isPasswordCorrect) {
-				const payload = {
-					email: user.email,
-					firstName: user.firstName,
-					lastName: user.lastName,
-					role: user.role,
-					isEmailVerified: user.isEmailVerified,
-					image: user.image,
-				};
-
-				const token = jwt.sign(payload, "secretKey96$2025", {
-					expiresIn: "150h",
-				});
-
-				res.json({
-					message: "Login successful",
-					token: token,
-				});
-			} else {
-				res.status(401).json({
-					message: "Invalid password",
-				});
-			}
 		}
-	});
+
+		const isPasswordCorrect = await bcrypt.compare(password, user.password);
+		if (!isPasswordCorrect) {
+			return res.status(401).json({
+				success: false,
+				message: "Invalid password",
+			});
+		}
+
+		const payload = {
+			email: user.email,
+			firstName: user.firstName,
+			lastName: user.lastName,
+			role: user.role,
+			isEmailVerified: user.isEmailVerified,
+			image: user.image,
+		};
+
+		// ✅ Fix: `process.env`, not `Process.env`
+		const token = jwt.sign(payload, process.env.JWT_SECRET, {
+			expiresIn: "150h",
+		});
+
+		return res.status(200).json({
+			success: true,
+			message: "Login successful",
+			token,
+		});
+	} catch (error) {
+		console.error("Error during login:", error);
+		return res.status(500).json({
+			success: false,
+			message: "Internal server error",
+		});
+	}
 }
+
 
 export function isAdmin(req) {
 	if (req.user == null) {

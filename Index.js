@@ -12,6 +12,8 @@ dotenv.config()
 const mongoURI = process.env.MONGO_URL
 
 
+
+
 mongoose.connect(mongoURI).then(
     ()=>{
         console.log("Connected to MongoDB Cluster")
@@ -35,16 +37,16 @@ app.use(
         if(authorizationHeader != null){
 
             const token = authorizationHeader.replace("Bearer ", "")
- 
 
-            jwt.verify(token, Process.env.JWT_SECRET,
+
+            jwt.verify(token, process.env.JWT_SECRET,
                 (error, content)=>{
 
                     if(content == null){
 
                         console.log("invalid token")
 
-                        res.json({
+                        res.status(401).json({
                             message : "invalid token"
                         })
 
